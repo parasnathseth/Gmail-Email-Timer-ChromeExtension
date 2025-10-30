@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Gmail Email Timer MVP",
+  "version": "0.1.0",
+  "description": "Displays a simple timer when composing a new email in Gmail.",
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
