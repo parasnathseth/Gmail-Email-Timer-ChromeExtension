@@ -6,7 +6,7 @@
   "content_scripts": [
     {
       "matches": ["https://mail.google.com/*"],
-      "js": ["content.js"],
+      "js": ["roasts.js", "content.js"],
       "css": ["timer-styles.css"]
     }
   ]

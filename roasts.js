@@ -1,0 +1,16 @@
+const ROASTS = [
+  "Are you writing a novel? This is an email.",
+  "That 'Send' button isn't just for decoration, you know.",
+  "At this rate, the recipient will have retired.",
+  "Remember when emails were quick? Good times.",
+  "Maybe try a carrier pigeon? Might be faster.",
+  "Are you carving this email into a stone tablet?",
+  "I've seen glaciers melt faster than this draft.",
+  "Did you forget what you were trying to say?",
+  "Let it go. Whatever it is, just let it go.",
+  "Is this an email or a screenplay?",
+  "Okay, Shakespeare, time to wrap it up.",
+  "At this rate, you're on track to finish by next year.",
+  "Why not just send a postcard instead?",
+  "I wanna charge you rent for occupying this window for so long.",
+];
