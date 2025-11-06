@@ -1,0 +1,64 @@
+/* The main container for our UI */
+.gmt-timer-container {
+  position: absolute;
+  top: 10px;
+  right: 90px;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* The timer display */
+.gmt-timer-display {
+  font-size: 14px;
+  font-family: monospace;
+  color: #333;
+  background-color: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* The roast bubble */
+.gmt-roast-bubble {
+  position: relative;
+  font-size: 12px;
+  font-family: 'Arial', sans-serif;
+  font-weight: bold;
+  color: #fff;
+  background-color: #c0392b;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 200px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+  /* --- Animation --- */
+  opacity: 0;
+  /* Start 10px to the right */
+  transform: translateX(10px);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+
+  /* Hide it until we're ready */
+  visibility: hidden;
+}
+
+/* The "visible" state for the roast bubble */
+.gmt-roast-bubble.visible {
+  opacity: 1;
+  transform: translateX(0);
+  visibility: visible;
+}
+
+/* The little triangle pointer for the chat bubble */
+.gmt-roast-bubble::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%; /* Sits on the left edge of the bubble */
+  margin-top: -6px;
+  border-width: 6px;
+  border-style: solid;
+  /* This creates the triangle pointing left */
+  border-color: transparent #c0392b transparent transparent;
+}

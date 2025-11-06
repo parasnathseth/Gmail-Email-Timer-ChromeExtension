@@ -1,4 +1,4 @@
-console.log("Email Timer script loaded (with roasts!).");
+console.log("Email Timer script loaded.");
 
 const ROASTS = [
   "Are you writing a novel? This is an email.",
@@ -17,27 +17,155 @@ const ROASTS = [
   "I wanna charge you rent for occupying this window for so long.",
 ];
 
+const FIRST_ROAST_TIME = 180; // 3 minutes
+const SUBSEQUENT_ROAST_TIME = 120; // 2 minutes
+
+// Selectors for key elements
+const COMPOSE_BUTTON_SELECTOR = '[role="button"][gh="cm"]';
+const COMPOSE_WINDOW_SELECTOR = '[role="dialog"]';
+const SEND_BUTTON_SELECTOR = '[role="button"][data-tooltip*="Send"]';
+const DISCARD_BUTTON_SELECTOR = '[role="button"][aria-label="Discard draft"]';
+const CLOSE_BUTTON_SELECTOR = '[role="button"][aria-label="Close"]';
+const HEADER_SELECTOR = '[role="dialog"] > div:first-child [aria-label="New Message"]';
+
+/**
+ * Manages the entire lifecycle of a single timer instance.
+ * This class creates the UI, starts the timer, handles roasts,
+ * and cleans itself up when stopped.
+ */
+class Timer {
+  constructor(composeWindow) {
+    this.composeWindow = composeWindow;
+    this.seconds = 0;
+    this.roastIndex = 0;
+    this.intervalId = null;
+    this.container = null;
+    this.timerDisplay = null;
+    this.roastBubble = null;
+    this.sendButton = null;
+    this.discardButton = null;
+    this.closeButton = null;
+
+    // Bind 'this' for event listeners
+    this.stop = this.stop.bind(this);
+    this.tick = this.tick.bind(this);
+
+    this.createUI();
+    this.findAndBindControls();
+  }
+
+
+  createUI() {
+    this.container = document.createElement('div');
+    this.container.className = 'gmt-timer-container';
+
+    this.timerDisplay = document.createElement('div');
+    this.timerDisplay.className = 'gmt-timer-display';
+    this.timerDisplay.textContent = '0:00';
+
+    this.roastBubble = document.createElement('div');
+    this.roastBubble.className = 'gmt-roast-bubble';
+
+    this.container.appendChild(this.timerDisplay);
+    this.container.appendChild(this.roastBubble);
+
+    const header = this.composeWindow.querySelector(HEADER_SELECTOR);
+    if (header && header.parentElement) {
+      header.parentElement.style.position = 'relative'; // Ensure parent is positioned
+      header.parentElement.appendChild(this.container);
+    } else {
+      this.composeWindow.appendChild(this.container); // Fallback
+    }
+  }
+
+  /**
+   * Finds the Send, Discard, and Close buttons and attaches the stop listener.
+   */
+  findAndBindControls() {
+    this.sendButton = this.composeWindow.querySelector(SEND_BUTTON_SELECTOR);
+    this.discardButton = this.composeWindow.querySelector(DISCARD_BUTTON_SELECTOR);
+    this.closeButton = this.composeWindow.querySelector(CLOSE_BUTTON_SELECTOR);
+
+    if (this.sendButton) this.sendButton.addEventListener('click', this.stop);
+    if (this.discardButton) this.discardButton.addEventListener('click', this.stop);
+    if (this.closeButton) this.closeButton.addEventListener('click', this.stop);
+  }
+
+  /**
+   * Starts the timer interval.
+   */
+  start() {
+    this.intervalId = setInterval(this.tick, 1000);
+  }
+
+  /**
+   * The main timer loop, called every second.
+   */
+  tick() {
+    this.seconds++;
+    this.updateTimerDisplay();
+
+    let shouldRoast = false;
+    if (this.seconds === FIRST_ROAST_TIME) {
+      shouldRoast = true;
+    } else if (this.seconds > FIRST_ROAST_TIME && (this.seconds - FIRST_ROAST_TIME) % SUBSEQUENT_ROAST_TIME === 0) {
+      shouldRoast = true;
+    }
+
+    if (shouldRoast) {
+      this.showRoast();
+    }
+  }
+
+  updateTimerDisplay() {
+    const minutes = Math.floor(this.seconds / 60);
+    const displaySeconds = this.seconds % 60;
+    this.timerDisplay.textContent = `${minutes}:${displaySeconds < 10 ? '0' : ''}${displaySeconds}`;
+  }
+
+  /**
+   * Fades out the old roast, updates text, and fades in the new one.
+   */
+  showRoast() {
+    this.roastBubble.classList.remove('visible');
+
+    setTimeout(() => {
+      this.roastBubble.textContent = ROASTS[this.roastIndex % ROASTS.length];
+      this.roastBubble.classList.add('visible');
+      this.roastIndex++;
+    }, 400); // Must match CSS transition time
+  }
+
+  /**
+   * Stops the timer, removes the UI, and cleans up event listeners.
+   */
+  stop() {
+    console.log(`Timer stopped at ${this.timerDisplay.textContent}`);
+    clearInterval(this.intervalId);
+    
+    if (this.container) {
+      this.container.remove();
+    }
+
+    // Removing event listeners to prevent memory leaks
+    if (this.sendButton) this.sendButton.removeEventListener('click', this.stop);
+    if (this.discardButton) this.discardButton.removeEventListener('click', this.stop);
+    if (this.closeButton) this.closeButton.removeEventListener('click', this.stop);
+  }
+}
+
 /**
  * Finds the "Compose" button and attaches a click listener.
- * We use a MutationObserver to watch for the button appearing, 
- * as Gmail is a single-page-app and it might not be on the page at load.
  */
 function observeForComposeButton() {
-  // Gmail's "Compose" button has a stable selector: [role="button"][gh="cm"]
-  const composeButtonSelector = '[role="button"][gh="cm"]';
-
   const observer = new MutationObserver((mutations, obs) => {
-    const composeButton = document.querySelector(composeButtonSelector);
+    const composeButton = document.querySelector(COMPOSE_BUTTON_SELECTOR);
     if (composeButton) {
       console.log("Found 'Compose' button. Attaching listener.");
-      // Once found, attach the listener
       composeButton.addEventListener('click', handleComposeClick);
-      // We found it, so we can stop observing
-      obs.disconnect();
+      obs.disconnect(); // We found it, no need to observe anymore
     }
   });
-
-  // Start observing the whole document body for changes
   observer.observe(document.body, {
     childList: true,
     subtree: true
@@ -45,136 +173,39 @@ function observeForComposeButton() {
 }
 
 /**
- * This function is called when the "Compose" button is clicked.
- * It waits for the compose window to appear and then attaches a timer.
+ * Sets up an observer to find a new 'Compose' window.
  */
 function handleComposeClick() {
   console.log("'Compose' clicked. Looking for new compose window...");
-  
-  // We use a MutationObserver to wait for the new compose window to be
-  // added to the page. This is more reliable than a simple setTimeout.
-  const composeWindowObserver = new MutationObserver((mutations, obs) => {
-    // Gmail's compose windows have a [role="dialog"] and contain a "Send" button.
-    // We look for one that *doesn't* have our timer attached yet.
-    const allComposeWindows = document.querySelectorAll('[role="dialog"]');
-    
-    for (const composeWindow of allComposeWindows) {
-      // Check if it's a new message window (has a "Send" button)
-      const hasSendButton = composeWindow.querySelector('[role="button"][data-tooltip*="Send"]');
-      
-      // Check if we've already attached a timer
-      const hasTimer = composeWindow.dataset.timerAttached === 'true';
 
-      if (hasSendButton && !hasTimer) {
+  const composeWindowObserver = new MutationObserver((mutations, obs) => {
+    const allComposeWindows = document.querySelectorAll(COMPOSE_WINDOW_SELECTOR);
+    for (const composeWindow of allComposeWindows) {
+      const hasSendButton = composeWindow.querySelector(SEND_BUTTON_SELECTOR);
+      const hasTimerAlready = composeWindow.dataset.timerAttached === 'true';
+
+      if (hasSendButton && !hasTimerAlready) {
         console.log("Found new compose window. Attaching timer.");
         composeWindow.dataset.timerAttached = 'true';
         attachTimerToWindow(composeWindow);
-        // We don't disconnect, as the user might open *another* compose window
       }
     }
   });
 
-  // Start observing for new compose windows
   composeWindowObserver.observe(document.body, {
     childList: true,
     subtree: true
   });
+  
+  // TODO: Might want to add logic to disconnect this observer after a certain time or when the user navigates away.
 }
 
 /**
- * Creates and attaches the timer UI and stop-logic to a specific compose window.
- * @param {HTMLElement} composeWindow - The DOM element for the compose window.
- */
+* Creates and attaches the timer UI and stop-logic to a specific compose window.
+*/
 function attachTimerToWindow(composeWindow) {
-  // 1. Create a container for our UI
-  const timerContainer = document.createElement('div');
-  timerContainer.style.position = 'absolute';
-  timerContainer.style.top = '10px';
-  timerContainer.style.right = '90px'; // Position it left of the standard window buttons
-  timerContainer.style.zIndex = '9998';
-  timerContainer.style.textAlign = 'right';
-
-  // 2. Create the timer display element
-  const timerDiv = document.createElement('div');
-  timerDiv.style.fontSize = '14px';
-  timerDiv.style.fontFamily = 'monospace';
-  timerDiv.style.color = '#333';
-  timerDiv.style.backgroundColor = '#f5f5f5';
-  timerDiv.style.padding = '4px 8px';
-  timerDiv.style.borderRadius = '4px';
-  timerDiv.textContent = '0:00';
-  
-  // 3. Create the roast display element
-  const roastDiv = document.createElement('div');
-  roastDiv.style.fontSize = '12px';
-  roastDiv.style.color = '#c0392b'; // A nice "roasty" red
-  roastDiv.style.marginTop = '4px';
-  roastDiv.style.fontFamily = 'sans-serif';
-  roastDiv.style.fontWeight = 'bold';
-  roastDiv.style.maxWidth = '200px';
-  
-  // 4. Add timer and roast to the container
-  timerContainer.appendChild(timerDiv);
-  timerContainer.appendChild(roastDiv);
-
-  // 5. Find the header of the compose window to inject the container
-  const header = composeWindow.querySelector('[role="dialog"] > div:first-child [aria-label="New Message"]');
-  if (header && header.parentElement) {
-    header.parentElement.style.position = 'relative'; // Ensure parent is positioned
-    header.parentElement.appendChild(timerContainer);
-  } else {
-    composeWindow.appendChild(timerContainer); // Fallback
-  }
-
-  // 6. Start the timer logic
-  let seconds = 0;
-  let roastIndex = 0;
-  const firstRoastTime = 180; // 3 minutes
-  const subsequentRoastTime = 120; // 2 minutes
-
-  const intervalId = setInterval(() => {
-    seconds++;
-    
-    // Update timer display
-    const minutes = Math.floor(seconds / 60);
-    const displaySeconds = seconds % 60;
-    timerDiv.textContent = `${minutes}:${displaySeconds < 10 ? '0' : ''}${displaySeconds}`;
-
-    // Check for the first roast at 3 minutes
-    if (seconds === firstRoastTime) {
-      roastDiv.textContent = ROASTS[roastIndex % ROASTS.length];
-      roastIndex++;
-    }
-    // Check for subsequent roasts every 2 minutes after that
-    else if (seconds > firstRoastTime && (seconds - firstRoastTime) % subsequentRoastTime === 0) {
-      roastDiv.textContent = ROASTS[roastIndex % ROASTS.length];
-      roastIndex++;
-    }
-  }, 1000);
-
-  // 7. Create the function to stop the timer
-  const stopTimer = () => {
-    console.log(`Timer stopped at ${timerDiv.textContent}`);
-    clearInterval(intervalId);
-    timerContainer.remove(); // Remove the whole container
-
-    // IMPORTANT: Remove the click listeners to prevent memory leaks
-    sendButton.removeEventListener('click', stopTimer);
-    discardButton.removeEventListener('click', stopTimer);
-    closeButton.removeEventListener('click', stopTimer);
-  };
-
-  // 8. Find the "Send", "Discard", and "Close" buttons *within* this window
-  const sendButton = composeWindow.querySelector('[role="button"][data-tooltip*="Send"]');
-  const discardButton = composeWindow.querySelector('[role="button"][aria-label="Discard draft"]');
-  const closeButton = composeWindow.querySelector('[role="button"][aria-label="Close"]');
-
-  // 9. Attach the stop listener to all of them
-  if (sendButton) sendButton.addEventListener('click', stopTimer);
-  if (discardButton) discardButton.addEventListener('click', stopTimer);
-  if (closeButton) closeButton.addEventListener('click', stopTimer);
+  const timer = new Timer(composeWindow);
+  timer.start();
 }
-
-// --- Start the extension ---
-// This is the entry point. We start by looking for the "Compose" button.
+ 
 observeForComposeButton();
