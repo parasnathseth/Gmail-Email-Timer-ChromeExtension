@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Gmail Compose Timer",
+  "name": "Gmail Email Timer",
   "version": "1.0.0",
   "description": "Adds a timer to the Gmail compose window to...encourage brevity. Just try not to let the timer run past 3 minutes!",
   "content_scripts": [
