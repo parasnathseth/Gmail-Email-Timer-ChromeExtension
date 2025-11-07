@@ -8,8 +8,7 @@ const COMPOSE_BUTTON_SELECTOR = '[role="button"][gh="cm"]';
 const COMPOSE_WINDOW_SELECTOR = '[role="dialog"]';
 const SEND_BUTTON_SELECTOR = '[role="button"][data-tooltip*="Send"]';
 const DISCARD_BUTTON_SELECTOR = '[role="button"][aria-label="Discard draft"]';
-const CLOSE_BUTTON_SELECTOR = '[role="button"][aria-label="Close"]';
-const HEADER_SELECTOR = '[role="dialog"] > div:first-child [aria-label="New Message"]';
+const CLOSE_BUTTON_SELECTOR = '[role="button"][aria-label="Save & Close"]';
 
 /**
  * Manages the entire lifecycle of a single timer instance.
@@ -51,13 +50,7 @@ class Timer {
     this.container.appendChild(this.timerDisplay);
     this.container.appendChild(this.roastBubble);
 
-    const header = this.composeWindow.querySelector(HEADER_SELECTOR);
-    if (header && header.parentElement) {
-      header.parentElement.style.position = 'relative'; // Ensure parent is positioned
-      header.parentElement.appendChild(this.container);
-    } else {
-      this.composeWindow.appendChild(this.container); // Fallback
-    }
+    this.composeWindow.prepend(this.container);
   }
 
   /**
