@@ -1,6 +1,7 @@
 # Gmail Email Timer ⏱️
 
-* **[]()** **Get it on the Chrome Web Store:** Coming Soon! Still in Development 🚀
+* An extension that adds a timer to your Gmail email drafts and roasts you if you take too long! ⌛
+* **[]()** **Get it on the Chrome Web Store Soon!** (Currently in Development 🚀)
 
 ---
 
@@ -8,12 +9,13 @@
 
 - This extension adds a timer to every new email draft you compose in Gmail.
 - If you take very long, it roasts you to keep you on your toes! 😄
-- In the future, it will allow you to see how long you spend on emails on average and show you trends over time. 
-    - It will also track the number of times you've been roasted since installation 🔥
-
-<br/>
-
 - This is a fun, light-hearted extension, not meant to shame anyone. Use it to improve your email habits, or just for laughs!
+
+## What's Going to be Added
+
+- Analytics and Trends:
+    - In the future, it will allow you to see how long you spend on emails on average, time spent on drafting emails in a day and show you trends over time. 
+    - It will also track the number of times you've been roasted since installation 🔥
 
 ---
 
