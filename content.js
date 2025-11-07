@@ -105,9 +105,9 @@ class Timer {
     this.roastBubble.classList.remove('visible');
 
     setTimeout(() => {
-      this.roastBubble.textContent = ROASTS[this.roastIndex % ROASTS.length];
+      const randomIndex = Math.floor(Math.random() * ROASTS.length);
+      this.roastBubble.textContent = ROASTS[randomIndex];
       this.roastBubble.classList.add('visible');
-      this.roastIndex++;
     }, 400); // Must match CSS transition time
   }
 
