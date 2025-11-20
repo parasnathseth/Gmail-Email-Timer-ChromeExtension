@@ -6,9 +6,9 @@ const SUBSEQUENT_ROAST_TIME = 120; // 2 minutes
 // Selectors for key elements
 const COMPOSE_BUTTON_SELECTOR = '[role="button"][gh="cm"]';
 const COMPOSE_WINDOW_SELECTOR = '[role="dialog"]';
-const SEND_BUTTON_SELECTOR = '[role="button"][data-tooltip*="Send"]';
-const DISCARD_BUTTON_SELECTOR = '[role="button"][aria-label="Discard draft"]';
-const CLOSE_BUTTON_SELECTOR = '[role="button"][aria-label="Save & Close"]';
+const SEND_BUTTON_SELECTOR = '[role="button"][aria-label="Send ‪(Ctrl-Enter)‬"]';
+const DISCARD_BUTTON_SELECTOR = '[role="button"][aria-label="Discard draft ‪(Ctrl-Shift-D)‬"]';
+const CLOSE_BUTTON_SELECTOR = 'img[aria-label="Save & close"]';
 
 /**
  * Manages the entire lifecycle of a single timer instance.
