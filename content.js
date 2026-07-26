@@ -5,6 +5,9 @@ const SUBSEQUENT_ROAST_TIME = 120; // 2 minutes
 
 // Selectors for key elements
 const COMPOSE_BUTTON_SELECTOR = '[role="button"][gh="cm"]';
+const REPLY_BUTTON_SELECTOR = '[role="link"][aria-label="Reply"]';
+const REPLY_ALL_BUTTON_SELECTOR = '[role="link"][aria-label="Reply all"]';
+const FORWARD_BUTTON_SELECTOR = '[role="link"][aria-label="Forward"]';
 const COMPOSE_WINDOW_SELECTOR = '[role="dialog"]';
 const SEND_BUTTON_SELECTOR = '[role="button"][aria-label="Send ‪(Ctrl-Enter)‬"]';
 const DISCARD_BUTTON_SELECTOR = '[role="button"][aria-label="Discard draft ‪(Ctrl-Shift-D)‬"]';
@@ -117,7 +120,9 @@ class Timer {
   stop() {
     console.log(`Timer stopped at ${this.timerDisplay.textContent}`);
     clearInterval(this.intervalId);
-    
+
+    this.saveSession(); // Save the session data
+
     if (this.container) {
       this.container.remove();
     }
@@ -127,52 +132,103 @@ class Timer {
     if (this.discardButton) this.discardButton.removeEventListener('click', this.stop);
     if (this.closeButton) this.closeButton.removeEventListener('click', this.stop);
   }
-}
 
-/**
- * Finds the "Compose" button and attaches a click listener.
- */
-function observeForComposeButton() {
-  const observer = new MutationObserver((mutations, obs) => {
-    const composeButton = document.querySelector(COMPOSE_BUTTON_SELECTOR);
-    if (composeButton) {
-      console.log("Found 'Compose' button. Attaching listener.");
-      composeButton.addEventListener('click', handleComposeClick);
-      obs.disconnect(); // We found it, no need to observe anymore
+  /**
+   * Saves the completed timer session to chrome.storage.
+   */
+  saveSession() {
+    // Don't save sessions that are too short
+    if (this.seconds < 1) {
+      return;
     }
-  });
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+
+    const session = {
+      date: new Date().toISOString(),
+      seconds: this.seconds,
+    };
+
+    chrome.storage.local.get({ timerSessions: [] }, (result) => {
+      const sessions = result.timerSessions;
+      sessions.push(session);
+      chrome.storage.local.set({ timerSessions: sessions }, () => {
+        console.log("Timer session saved:", session);
+      });
+    });
+  }
 }
 
 /**
- * Sets up an observer to find a new 'Compose' window.
+ * Sets up a persistent observer to watch for any new compose windows being added to the DOM.
+ * This handles all cases: new compose, reply, forward, and opening drafts.
  */
-function handleComposeClick() {
-  console.log("'Compose' clicked. Looking for new compose window...");
+function observeForComposeWindows() {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length === 0) return;
+ .000
+            for (const node of mutation.addedNodes) {
+                // We only care about element nodes
+                if (node.nodeType !== Node.ELEMENT_NODE) continue;
 
-  const composeWindowObserver = new MutationObserver((mutations, obs) => {
-    const allComposeWindows = document.querySelectorAll(COMPOSE_WINDOW_SELECTOR);
-    for (const composeWindow of allComposeWindows) {
-      const hasSendButton = composeWindow.querySelector(SEND_BUTTON_SELECTOR);
-      const hasTimerAlready = composeWindow.dataset.timerAttached === 'true';
+                // Check if the added node is a compose window itself
+                if (node.matches(COMPOSE_WINDOW_SELECTOR)) {
+                    handleFoundComposeWindow(node);
+                }
+                
+                // Or, check if the added node contains a compose window
+                const composeWindow = node.querySelector(COMPOSE_WINDOW_SELECTOR);
+                if (composeWindow) {
+                    handleFoundComposeWindow(composeWindow);
+                }
+            }
+        });
+    });
 
-      if (hasSendButton && !hasTimerAlready) {
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+    console.log("Persistent compose window observer initialized.");
+}
+
+/**
+ * Attaches a timer to a newly found compose window if it's valid.
+ * @param {Element} composeWindow - The compose window element.
+ */
+function handleFoundComposeWindow(composeWindow) {
+    const hasSendButton = composeWindow.querySelector(SEND_BUTTON_SELECTOR);
+    const hasTimerAlready = composeWindow.dataset.timerAttached === 'true';
+
+    if (hasSendButton && !hasTimerAlready) {
         console.log("Found new compose window. Attaching timer.");
         composeWindow.dataset.timerAttached = 'true';
         attachTimerToWindow(composeWindow);
-      }
     }
-  });
+}
 
-  composeWindowObserver.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-  
-  // TODO: Might want to add logic to disconnect this observer after a certain time or when the user navigates away.
+
+/**
+ * Uses event delegation to listen for clicks on compose, reply, etc., primarily for logging.
+ */
+function initializeEmailActionLogger() {
+    document.body.addEventListener('click', (event) => {
+        const target = event.target;
+        const composeButton = target.closest(COMPOSE_BUTTON_SELECTOR);
+        const replyButton = target.closest(REPLY_BUTTON_SELECTOR);
+        const replyAllButton = target.closest(REPLY_ALL_BUTTON_SELECTOR);
+        const forwardButton = target.closest(FORWARD_BUTTON_SELECTOR);
+
+        if (composeButton) {
+            console.log("'Compose' button clicked.");
+        } else if (replyButton) {
+            console.log("'Reply' button clicked.");
+        } else if (replyAllButton) {
+            console.log("'Reply All' button clicked.");
+        } else if (forwardButton) {
+            console.log("'Forward' button clicked.");
+        }
+    });
+    console.log("Global click listener for email actions initialized for logging.");
 }
 
 /**
@@ -183,4 +239,6 @@ function attachTimerToWindow(composeWindow) {
   timer.start();
 }
  
-observeForComposeButton();
+// Initialize the system
+observeForComposeWindows();
+initializeEmailActionLogger();

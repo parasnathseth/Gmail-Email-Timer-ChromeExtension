@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Timer Analytics</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="state-message">Loading data...</div>
+        <div id="empty-state" class="state-message hidden">No session data yet. Go write some emails!</div>
+        <div id="analytics-content" class="hidden">
+            <div class="stat-card">
+                <div id="average-time" class="big-stat">00:00</div>
+                <div class="stat-label">Average time spent writing per email</div>
+            </div>
+            
+            <div class="secondary-stats">
+                <div class="stat-item">
+                    <span class="stat-title">Total Emails:</span>
+                    <span id="total-emails" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-title">Total Time:</span>
+                    <span id="total-time" class="stat-value">00:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="dashboard.js"></script>
+</body>
+</html>
