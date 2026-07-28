@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentEl = document.getElementById('analytics-content');
     
     const averageTimeEl = document.getElementById('average-time');
-    const totalEmailsEl = document.getElementById('total-emails');
     const totalTimeEl = document.getElementById('total-time');
 
     chrome.storage.local.get({ timerSessions: [] }, (result) => {
@@ -26,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const averageSeconds = totalSeconds / totalSessions;
 
         averageTimeEl.textContent = formatMMSS(averageSeconds);
-        totalEmailsEl.textContent = totalSessions;
         totalTimeEl.textContent = formatMMSS(totalSeconds);
     }
 

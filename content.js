@@ -30,6 +30,7 @@ class Timer {
     this.sendButton = null;
     this.discardButton = null;
     this.closeButton = null;
+    this.isDestroyed = false;
 
     // Bind 'this' for event listeners
     this.stop = this.stop.bind(this);
@@ -53,7 +54,14 @@ class Timer {
     this.container.appendChild(this.timerDisplay);
     this.container.appendChild(this.roastBubble);
 
-    this.composeWindow.prepend(this.container);
+    const dialog = this.composeWindow.closest('[role="dialog"]');
+    if (dialog) {
+      dialog.prepend(this.container);
+      this.container.classList.add('gmt-dialog-timer');
+    } else {
+      this.composeWindow.prepend(this.container);
+      this.container.classList.add('gmt-inline-timer');
+    }
   }
 
   /**
@@ -128,7 +136,6 @@ class Timer {
    */
   stop() {
     console.log(`Timer stopped at ${this.timerDisplay.textContent}`);
-    this.saveSession(); // Save the session data
     this.destroy();
   }
 
@@ -136,10 +143,15 @@ class Timer {
    * Cleans up the timer, clears the interval, and removes listeners.
    */
   destroy() {
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
+
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+
+    this.saveSession(); // Save session in all destruction cases (including nav-away)
 
     if (this.container) {
       this.container.remove();
