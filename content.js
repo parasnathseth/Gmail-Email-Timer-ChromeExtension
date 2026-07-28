@@ -8,10 +8,10 @@ const COMPOSE_BUTTON_SELECTOR = '[role="button"][gh="cm"]';
 const REPLY_BUTTON_SELECTOR = '[role="link"][aria-label="Reply"]';
 const REPLY_ALL_BUTTON_SELECTOR = '[role="link"][aria-label="Reply all"]';
 const FORWARD_BUTTON_SELECTOR = '[role="link"][aria-label="Forward"]';
-const COMPOSE_WINDOW_SELECTOR = '[role="dialog"]';
-const SEND_BUTTON_SELECTOR = '[role="button"][aria-label="Send ‪(Ctrl-Enter)‬"]';
-const DISCARD_BUTTON_SELECTOR = '[role="button"][aria-label="Discard draft ‪(Ctrl-Shift-D)‬"]';
-const CLOSE_BUTTON_SELECTOR = 'img[aria-label="Save & close"]';
+const COMPOSE_WINDOW_SELECTOR = '.aoI';
+const SEND_BUTTON_SELECTOR = '[role="button"][aria-label^="Send"]';
+const DISCARD_BUTTON_SELECTOR = '[role="button"][aria-label^="Discard draft"]';
+const CLOSE_BUTTON_SELECTOR = '[aria-label^="Save & close"]';
 
 /**
  * Manages the entire lifecycle of a single timer instance.
@@ -62,7 +62,10 @@ class Timer {
   findAndBindControls() {
     this.sendButton = this.composeWindow.querySelector(SEND_BUTTON_SELECTOR);
     this.discardButton = this.composeWindow.querySelector(DISCARD_BUTTON_SELECTOR);
-    this.closeButton = this.composeWindow.querySelector(CLOSE_BUTTON_SELECTOR);
+    
+    // The close button is in the dialog header, which is outside .aoI
+    this.closeButton = this.composeWindow.querySelector(CLOSE_BUTTON_SELECTOR) || 
+                       this.composeWindow.closest('[role="dialog"]')?.querySelector(CLOSE_BUTTON_SELECTOR);
 
     if (this.sendButton) this.sendButton.addEventListener('click', this.stop);
     if (this.discardButton) this.discardButton.addEventListener('click', this.stop);
@@ -80,6 +83,12 @@ class Timer {
    * The main timer loop, called every second.
    */
   tick() {
+    // If the compose window is no longer in the DOM, clean up
+    if (!document.body.contains(this.composeWindow)) {
+      this.destroy();
+      return;
+    }
+
     this.seconds++;
     this.updateTimerDisplay();
 
@@ -119,9 +128,18 @@ class Timer {
    */
   stop() {
     console.log(`Timer stopped at ${this.timerDisplay.textContent}`);
-    clearInterval(this.intervalId);
-
     this.saveSession(); // Save the session data
+    this.destroy();
+  }
+
+  /**
+   * Cleans up the timer, clears the interval, and removes listeners.
+   */
+  destroy() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
 
     if (this.container) {
       this.container.remove();
